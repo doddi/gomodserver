@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.UriBuilder;
 
 import com.doddi.gomodserver.Providers.Provider;
+import com.doddi.gomodserver.Providers.ReleaseInfo;
 import com.doddi.gomodserver.Providers.Tag;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -40,6 +41,16 @@ public class GithubProvider
     return response.stream()
         .map(tag -> new Tag(tag.getName(), tag.getCommit().getSha()))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public ReleaseInfo getRelease(final String repository, final String owner, final String version) {
+    GithubReleaseInfo gitHubReleaseInfo = service.getReleaseInfo(repository, owner, version, GITHUB_ACCEPT_HEADER, authToken);
+
+    ReleaseInfo releaseInfo = new ReleaseInfo();
+    releaseInfo.setDate(gitHubReleaseInfo.getPublished_at());
+    releaseInfo.setVersion(gitHubReleaseInfo.getTag_name());
+    return releaseInfo;
   }
 
   public String getContent(final String repository, final String owner, final String ref, final String filename) {

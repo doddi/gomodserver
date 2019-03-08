@@ -11,6 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import com.doddi.gomodserver.Providers.Provider;
+import com.doddi.gomodserver.Providers.ReleaseInfo;
 import com.doddi.gomodserver.Providers.Tag;
 
 @Path("/")
@@ -41,10 +42,21 @@ public class GoModuleServices
 
   @GET
   @Path("{module: .*}/@v/{version}.info")
+  @Produces(MediaType.APPLICATION_JSON)
   public VersionInfo getVersionInfo(@PathParam("module") final String module,
                                     @PathParam("version") final String version) {
+    String name = maybeRemoveGithubUrl(maybeRemoveLeadingSlash(module));
 
-    return null;
+    String[] path = name.split("/");
+    String owner = path[0];
+    String repository = path[1];
+
+    ReleaseInfo release = provider.getRelease(repository, owner, version);
+
+    VersionInfo versionInfo = new VersionInfo();
+    versionInfo.setVersion(release.getVersion());
+    versionInfo.setTime(release.getDate());
+    return versionInfo;
   }
 
   @GET
