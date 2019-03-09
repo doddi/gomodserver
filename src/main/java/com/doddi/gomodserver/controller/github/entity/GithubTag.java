@@ -1,4 +1,4 @@
-package com.doddi.gomodserver.Providers.github;
+package com.doddi.gomodserver.controller.github.entity;
 
 public class GithubTag
 {
