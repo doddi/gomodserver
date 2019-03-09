@@ -1,0 +1,1 @@
+web: java -jar -Ddw.server.applicationConnectors[0].port=$PORT target/gomodserver-1.0-SNAPSHOT.jar
