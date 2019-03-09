@@ -10,30 +10,24 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import com.doddi.gomodserver.Providers.Provider;
-import com.doddi.gomodserver.Providers.ReleaseInfo;
-import com.doddi.gomodserver.Providers.Tag;
+import com.doddi.gomodserver.controller.MappingController;
+import com.doddi.gomodserver.controller.ReleaseInfo;
+import com.doddi.gomodserver.controller.Tag;
 
 @Path("/")
 public class GoModuleServices
 {
-  private final Provider provider;
+  private final MappingController controller;
 
-  public GoModuleServices(final Provider provider) {
-    this.provider = provider;
+  public GoModuleServices(final MappingController controller) {
+    this.controller = controller;
   }
 
   @GET
   @Path("{module: .*}/@v/list")
   @Produces(MediaType.TEXT_PLAIN)
   public String getList(@PathParam("module") final String module) {
-    String name = maybeRemoveGithubUrl(maybeRemoveLeadingSlash(module));
-
-    String[] path = name.split("/");
-    String owner = path[0];
-    String repository = path[1];
-
-    List<Tag> tags = provider.getTags(repository, owner);
+    List<Tag> tags = controller.getTags(module);
 
     return tags.stream()
         .map(Tag::getName)
@@ -45,13 +39,7 @@ public class GoModuleServices
   @Produces(MediaType.APPLICATION_JSON)
   public VersionInfo getVersionInfo(@PathParam("module") final String module,
                                     @PathParam("version") final String version) {
-    String name = maybeRemoveGithubUrl(maybeRemoveLeadingSlash(module));
-
-    String[] path = name.split("/");
-    String owner = path[0];
-    String repository = path[1];
-
-    ReleaseInfo release = provider.getRelease(repository, owner, version);
+    ReleaseInfo release = controller.getRelease(module, version);
 
     VersionInfo versionInfo = new VersionInfo();
     versionInfo.setVersion(release.getVersion());
@@ -63,13 +51,7 @@ public class GoModuleServices
   @Path("{module: .*}/@v/{version}.mod")
   public ByteArrayInputStream getMod(@PathParam("module") final String module,
                                      @PathParam("version") final String version) {
-    String name = maybeRemoveGithubUrl(maybeRemoveLeadingSlash(module));
-
-    String[] path = name.split("/");
-    String owner = path[0];
-    String repository = path[1];
-
-    String content = provider.getContent(repository, owner, version, "go.mod");
+    String content = controller.getContent(module, version, "go.mod");
     return new ByteArrayInputStream(content.getBytes());
   }
 
@@ -77,28 +59,6 @@ public class GoModuleServices
   @Path("{module: .*}/@v/{version}.zip")
   public ByteArrayInputStream getZip(@PathParam("module") final String module,
                                      @PathParam("version") final String version) {
-    String name = maybeRemoveGithubUrl(maybeRemoveLeadingSlash(module));
-
-    String[] path = name.split("/");
-    String owner = path[0];
-    String repository = path[1];
-
-    return provider.getZip(repository, owner, version);
-  }
-
-  private String maybeRemoveLeadingSlash(final String module) {
-    String name = module;
-    if (module.startsWith("/")) {
-      name = module.replaceFirst("/", "");
-    }
-    return name;
-  }
-
-  private String maybeRemoveGithubUrl(final String module) {
-    String name = module;
-    if (module.startsWith("github.com")) {
-      name = module.replaceFirst("github.com", "");
-    }
-    return name;
+    return controller.getZip(module, version);
   }
 }

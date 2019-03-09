@@ -1,4 +1,4 @@
-package com.doddi.gomodserver.Providers;
+package com.doddi.gomodserver.controller;
 
 public class Tag
 {

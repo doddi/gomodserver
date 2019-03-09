@@ -1,30 +1,35 @@
 package com.doddi.gomodserver;
 
+import javax.ws.rs.client.Client;
 
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.webapp.WebAppContext;
+import com.doddi.gomodserver.controller.MappingController;
+import com.doddi.gomodserver.controller.github.GithubController;
+import com.doddi.gomodserver.gomodule.GoModuleServices;
+import com.google.common.collect.ImmutableMap;
+import io.dropwizard.Application;
+import io.dropwizard.client.JerseyClientBuilder;
+import io.dropwizard.setup.Environment;
 
-public class WebApplication
+import static com.doddi.gomodserver.controller.github.GithubController.GITHUB;
+
+public class WebApplication extends Application<WebApplicationConfig>
 {
   public static void main(String[] args) throws Exception {
-    String token = GomodWebParser.parse(args);
+    new WebApplication().run(args);
+  }
 
-    Server server = new Server(8080);
+  @Override
+  public void run(final WebApplicationConfig configuration, final Environment environment) throws Exception {
+    final Client client = new JerseyClientBuilder(environment)
+        .using(configuration.getJerseyClientConfiguration())
+        .build(getName());
 
-    WebAppContext context = new WebAppContext();
+    MappingController controller = new MappingController(client,
+        ImmutableMap.of(
+            GITHUB, new GithubController(client, configuration.getAuthToken())
+        ));
 
-    context.setDescriptor("./src/main/webapp/WEB-INF/web.xml");
-    context.setResourceBase("./src/main/webapp");
-    context.setContextPath("/");
-    if (token != null) {
-      context.setAttribute("authToken", "Bearer " + token);
-    }
-
-    context.setParentLoaderPriority(true);
-
-    server.setHandler(context);
-
-    server.start();
-    server.join();
+    // Server
+    environment.jersey().register(new GoModuleServices(controller));
   }
 }

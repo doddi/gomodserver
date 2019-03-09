@@ -1,25 +1,26 @@
 package com.doddi.gomodserver;
 
-import java.util.HashSet;
-import java.util.Set;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 
-import javax.servlet.ServletContext;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dropwizard.Configuration;
+import io.dropwizard.client.JerseyClientConfiguration;
 
-import com.doddi.gomodserver.Providers.github.GithubProvider;
-import com.doddi.gomodserver.gomodule.GoModuleServices;
-
-public class WebApplicationConfig extends Application
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class WebApplicationConfig extends Configuration
 {
-  private Set<Object> singletons = new HashSet<>();
+  @Valid
+  @NotNull
+  private JerseyClientConfiguration jerseyClient = new JerseyClientConfiguration();
 
-  public WebApplicationConfig(@Context ServletContext context) {
-    singletons.add(new GoModuleServices(new GithubProvider((String) context.getAttribute("authToken"))));
+  @JsonProperty("jerseyClient")
+  public JerseyClientConfiguration getJerseyClientConfiguration() {
+    return jerseyClient;
   }
 
-  @Override
-  public Set<Object> getSingletons() {
-    return singletons;
+  public String getAuthToken() {
+    return null;
   }
 }
