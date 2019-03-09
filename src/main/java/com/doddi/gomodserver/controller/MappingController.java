@@ -1,15 +1,18 @@
 package com.doddi.gomodserver.controller;
 
-import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+
+import com.doddi.gomodserver.gomodule.VersionInfo;
 
 public class MappingController
 {
@@ -23,18 +26,19 @@ public class MappingController
     this.controllers = controllers;
   }
 
-  public List<Tag> getTags(final String url) {
-    URI uri;
-    try {
-      uri = new URI("https://" + url);
-    }
-    catch (URISyntaxException e) {
-      throw new RuntimeException("Invalid url");
-    }
+  public String getReleases(final String url) {
+    List<ReleaseInfo> releases = getReleaseInfos(url);
 
-    URI repositoryVcsUrl = findRepositoryVcsUrl(uri);
-    Controller controller = controllers.get(repositoryVcsUrl.getHost());
-    return controller.getTags(repositoryVcsUrl);
+    return releases.stream()
+        .map(ReleaseInfo::getVersion)
+        .collect(Collectors.joining("\n"));
+  }
+
+  public VersionInfo getLatestRelease(final String url) {
+    List<ReleaseInfo> releases = getReleaseInfos(url);
+
+    ReleaseInfo releaseInfo = releases.get(0);
+    return new VersionInfo(releaseInfo.getVersion(), releaseInfo.getDate());
   }
 
   public ReleaseInfo getRelease(final String url, final String version) {
@@ -65,7 +69,7 @@ public class MappingController
     return controller.getContent(repositoryVcsUrl, version, filename);
   }
 
-  public ByteArrayInputStream getZip(final String url, final String version) {
+  public InputStream getZip(final String url, final String version) {
     URI uri;
     try {
       uri = new URI("https://" + url);
@@ -77,6 +81,20 @@ public class MappingController
     URI repositoryVcsUrl = findRepositoryVcsUrl(uri);
     Controller controller = controllers.get(repositoryVcsUrl.getHost());
     return controller.getZip(repositoryVcsUrl, version);
+  }
+
+  private List<ReleaseInfo> getReleaseInfos(final String url) {
+    URI uri;
+    try {
+      uri = new URI("https://" + url);
+    }
+    catch (URISyntaxException e) {
+      throw new RuntimeException("Invalid url");
+    }
+
+    URI repositoryVcsUrl = findRepositoryVcsUrl(uri);
+    Controller controller = controllers.get(repositoryVcsUrl.getHost());
+    return controller.getReleases(repositoryVcsUrl);
   }
 
   private URI discoverRepositoryVcs(final URI url) {

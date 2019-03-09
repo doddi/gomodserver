@@ -6,6 +6,11 @@ public class VersionInfo
 
   private String time;
 
+  public VersionInfo(final String version, final String date) {
+    this.version = version;
+    this.time = date;
+  }
+
   public String getVersion() {
     return version;
   }

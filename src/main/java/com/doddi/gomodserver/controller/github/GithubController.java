@@ -1,6 +1,6 @@
 package com.doddi.gomodserver.controller.github;
 
-import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -11,10 +11,9 @@ import javax.ws.rs.client.Client;
 
 import com.doddi.gomodserver.controller.Controller;
 import com.doddi.gomodserver.controller.ReleaseInfo;
-import com.doddi.gomodserver.controller.Tag;
 import com.doddi.gomodserver.controller.github.entity.GithubContent;
+import com.doddi.gomodserver.controller.github.entity.GithubRelease;
 import com.doddi.gomodserver.controller.github.entity.GithubReleaseInfo;
-import com.doddi.gomodserver.controller.github.entity.GithubTag;
 
 public class GithubController
     implements Controller
@@ -33,15 +32,15 @@ public class GithubController
   }
 
   @Override
-  public List<Tag> getTags(final URI url) {
+  public List<ReleaseInfo> getReleases(final URI url) {
     String[] split = url.getPath().split("/");
     String repository = split[2];
     String owner = split[1];
 
-    List<GithubTag> response = service.getTags(repository, owner);
+    List<GithubRelease> response = service.getReleases(repository, owner);
 
     return response.stream()
-        .map(tag -> new Tag(tag.getName(), tag.getCommit().getSha()))
+        .map(release -> new ReleaseInfo(release.getTag_name(), release.getPublished_at()))
         .collect(Collectors.toList());
   }
 
@@ -53,9 +52,7 @@ public class GithubController
 
     GithubReleaseInfo gitHubReleaseInfo = service.getReleaseInfo(repository, owner, version);
 
-    ReleaseInfo releaseInfo = new ReleaseInfo();
-    releaseInfo.setDate(gitHubReleaseInfo.getPublished_at());
-    releaseInfo.setVersion(gitHubReleaseInfo.getTag_name());
+    ReleaseInfo releaseInfo = new ReleaseInfo(gitHubReleaseInfo.getTag_name(), gitHubReleaseInfo.getPublished_at());
     return releaseInfo;
   }
 
@@ -73,7 +70,7 @@ public class GithubController
   }
 
   @Override
-  public ByteArrayInputStream getZip(final URI url, final String version) {
+  public InputStream getZip(final URI url, final String version) {
     String[] split = url.getPath().split("/");
     String repository = split[2];
     String owner = split[1];

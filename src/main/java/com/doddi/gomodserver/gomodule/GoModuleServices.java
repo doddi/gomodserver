@@ -1,8 +1,7 @@
 package com.doddi.gomodserver.gomodule;
 
 import java.io.ByteArrayInputStream;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.io.InputStream;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -12,11 +11,14 @@ import javax.ws.rs.core.MediaType;
 
 import com.doddi.gomodserver.controller.MappingController;
 import com.doddi.gomodserver.controller.ReleaseInfo;
-import com.doddi.gomodserver.controller.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/")
 public class GoModuleServices
 {
+  private static Logger logger = LoggerFactory.getLogger(GoModuleServices.class);
+
   private final MappingController controller;
 
   public GoModuleServices(final MappingController controller) {
@@ -27,11 +29,18 @@ public class GoModuleServices
   @Path("{module: .*}/@v/list")
   @Produces(MediaType.TEXT_PLAIN)
   public String getList(@PathParam("module") final String module) {
-    List<Tag> tags = controller.getTags(module);
+    logger.info("getting list for {}", module);
 
-    return tags.stream()
-        .map(Tag::getName)
-        .collect(Collectors.joining("\n"));
+    return  controller.getReleases(module);
+  }
+
+  @GET
+  @Path("{module: .*}/@latest")
+  @Produces(MediaType.APPLICATION_JSON)
+  public VersionInfo getLatestVersionInfo(@PathParam("module") final String module) {
+    logger.info("getting info for 'latest' {}", module);
+
+    return controller.getLatestRelease(module);
   }
 
   @GET
@@ -39,26 +48,30 @@ public class GoModuleServices
   @Produces(MediaType.APPLICATION_JSON)
   public VersionInfo getVersionInfo(@PathParam("module") final String module,
                                     @PathParam("version") final String version) {
+    logger.info("getting info for {} version {}", module, version);
+
     ReleaseInfo release = controller.getRelease(module, version);
 
-    VersionInfo versionInfo = new VersionInfo();
-    versionInfo.setVersion(release.getVersion());
-    versionInfo.setTime(release.getDate());
-    return versionInfo;
+    return new VersionInfo(release.getVersion(), release.getDate());
   }
 
   @GET
   @Path("{module: .*}/@v/{version}.mod")
   public ByteArrayInputStream getMod(@PathParam("module") final String module,
                                      @PathParam("version") final String version) {
+    logger.info("getting go.mod for {} version {}", module, version);
+
     String content = controller.getContent(module, version, "go.mod");
     return new ByteArrayInputStream(content.getBytes());
   }
 
   @GET
   @Path("{module: .*}/@v/{version}.zip")
-  public ByteArrayInputStream getZip(@PathParam("module") final String module,
-                                     @PathParam("version") final String version) {
+  @Produces("application/zip")
+  public InputStream getZip(@PathParam("module") final String module,
+                            @PathParam("version") final String version) {
+    logger.info("getting zipball for {} version {}", module, version);
+
     return controller.getZip(module, version);
   }
 }
